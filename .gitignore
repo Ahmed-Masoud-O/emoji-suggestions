@@ -1,0 +1,6 @@
+tweets.txt
+cleanedTweets.txt
+model.vec
+model.bin
+labels.txt
+emoji_map.py
