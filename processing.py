@@ -1,6 +1,4 @@
-from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tokenize import TweetTokenizer
-from nltk.stem.snowball import SnowballStemmer
 import fasttext
 import numpy as np
 from sklearn.neural_network import MLPClassifier
@@ -11,44 +9,91 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 import timeit
+from helper import *
+import matplotlib.pyplot as plt
+plt.rcdefaults()
+import numpy as np
+import matplotlib.pyplot as plt
 
 
-def post_append(temp_vector, number=0.0):
-    extra_vector = [number] * delta
-    # for i in range(delta):
-    #     temp_vector.append(number)
-    return temp_vector + extra_vector
+# def post_append(temp_vector, number=0.0):
+#     extra_vector = [number] * delta
+#     # for i in range(delta):
+#     #     temp_vector.append(number)
+#     return temp_vector + extra_vector
+#
+#
+# def pre_append(temp_vector, number=0.0):
+#     zeros_vector = [number] * delta
+#     temp_vector = zeros_vector + temp_vector
+#     return temp_vector
+def draw_accuracy():
+    objects = names
+    y_pos = np.arange(len(objects))
+    performance = scores
+
+    plt.bar(y_pos, performance, align='center', alpha=0.5)
+    plt.xticks(y_pos, objects)
+    plt.ylabel('accuracy')
+    plt.title('classifiers')
+    plt.show()
 
 
-def pre_append(temp_vector, number=0.0):
-    zeros_vector = [number] * delta
-    temp_vector = zeros_vector + temp_vector
-    return temp_vector
+def draw_f_measure():
+    objects = names
+    y_pos = np.arange(len(objects))
+    performance = f_measures
+
+    plt.bar(y_pos, performance, align='center', alpha=0.5)
+    plt.xticks(y_pos, objects)
+    plt.ylabel('f-measure')
+    plt.title('classifiers')
+    plt.show()
+
+
+def draw_precision():
+    objects = names
+    y_pos = np.arange(len(objects))
+    performance = precisions
+
+    plt.bar(y_pos, performance, align='center', alpha=0.5)
+    plt.xticks(y_pos, objects)
+    plt.ylabel('precision')
+    plt.title('classifiers')
+    plt.show()
+
+
+def draw_recall():
+    objects = names
+    y_pos = np.arange(len(objects))
+    performance = recalls
+
+    plt.bar(y_pos, performance, align='center', alpha=0.5)
+    plt.xticks(y_pos, objects)
+    plt.ylabel('recall')
+    plt.title('classifiers')
+    plt.show()
 
 names = ["Nearest Neighbors",
-         "Linear SVM",
-         "RBF SVM",
          "Decision Tree",
          "Random Forest",
          "Neural Net",
          "AdaBoost",
          "Naive Bayes",
-         "QDA"]
+         "QDA",
+         ]
 
 classifiers = [
-    KNeighborsClassifier(3),
-    SVC(kernel="linear", C=0.025),
-    SVC(gamma=2, C=1),
-    DecisionTreeClassifier(max_depth=5),
-    RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
-    MLPClassifier(alpha=1),
+    KNeighborsClassifier(15),
+    DecisionTreeClassifier(max_depth=20),
+    RandomForestClassifier(max_depth=20, n_estimators=10, max_features=1),
+    MLPClassifier(alpha=0.5),
     AdaBoostClassifier(),
     GaussianNB(),
-    QuadraticDiscriminantAnalysis()
+    QuadraticDiscriminantAnalysis(),
+
 ]
 tokenizer = TweetTokenizer()
-lemmatizer = WordNetLemmatizer()
-stemmer = SnowballStemmer('english')
 word_vectors = []
 length_vector = []
 index = 0
@@ -59,23 +104,14 @@ train_labels = []
 test_labels = []
 model = fasttext.load_model('model.bin')
 start = timeit.default_timer()
-limit = 1000
-train_count = 700
-for tweets, labels in zip(open('Output.txt', encoding="utf-8"), my_labels):
-    if index == limit:
-        break
-    if index < train_count:
-        train_labels.append(labels.strip())
-    else:
-        test_labels.append(labels.strip())
+train_count = 350000
+for tweets in open('cleanedTweets.txt', encoding="utf-8"):
     index += 1
     cleaned_tweet = tweets
     tokenized_tweet = tokenizer.tokenize(cleaned_tweet)
     filtered_tweet = tokenized_tweet
     tweet_vector = []
     for idx, word in enumerate(filtered_tweet):
-        filtered_tweet[idx] = lemmatizer.lemmatize(word)
-        filtered_tweet[idx] = stemmer.stem(word)
         tweet_vector = tweet_vector + model[word]
     length_vector.append(len(tweet_vector))
     word_vectors.append(tweet_vector)
@@ -88,26 +124,32 @@ print(stop - start)
 print("--------------------------------------")
 failed = 0
 start = timeit.default_timer()
-for vector in word_vectors:
-    delta = max_vec - len(vector)
-    if delta > 0:
-        if len(vector) > 0:
-            mean = sum(vector) / float(len(vector))
+for vector, labels in zip(word_vectors, my_labels):
+    # delta = max_vec - len(vector)
+    # if delta > 0:
+    #     if len(vector) > 0:
+    #         mean = sum(vector) / float(len(vector))
+    #     else:
+    #         failed += 1
+    #         mean = 0
+    #     # append the mean after the vector to make equal sizes
+    #     word_vectors[index] = post_append(vector, mean)
+    #     # append 0 after the vector to make equal sizes
+    #     # word_vectors[index] = post_append(vector)
+    #     # append the mean before the vector to make equal sizes
+    #     # word_vectors[index] = pre_append(vector, mean)
+    #     # append 0 before the vector to make equal sizes
+    #     # word_vectors[index] = pre_append(vector)
+    if len(vector) > 0:
+        simplified_word_vector = [min(vector), max(vector)]
+        if index < train_count:
+            train_tweets.append(simplified_word_vector)
         else:
-            failed += 1
-            mean = 0
-        # append the mean after the vector to make equal sizes
-        word_vectors[index] = post_append(vector, mean)
-        # append 0 after the vector to make equal sizes
-        # word_vectors[index] = post_append(vector)
-        # append the mean before the vector to make equal sizes
-        # word_vectors[index] = pre_append(vector, mean)
-        # append 0 before the vector to make equal sizes
-        # word_vectors[index] = pre_append(vector)
-    if index < train_count:
-        train_tweets.append(word_vectors[index])
-    else:
-        test_tweets.append(word_vectors[index])
+            test_tweets.append(simplified_word_vector)
+        if index < train_count:
+            train_labels.append(labels.strip())
+        else:
+            test_labels.append(labels.strip())
     index += 1
 stop = timeit.default_timer()
 print("padding")
@@ -121,15 +163,39 @@ print(len(train_labels))
 print(len(train_tweets))
 print(len(test_labels))
 print(len(test_tweets))
+f_measures = []
+scores = []
+precisions = []
+recalls = []
 for name, clf in zip(names, classifiers):
     start = timeit.default_timer()
-    clf.fit(np.asarray(train_tweets), np.asarray(train_labels).T)
-    score = clf.score(np.asarray(test_tweets), np.asarray(test_labels).T)
+    clf.fit(np.asarray(train_tweets), np.asarray(train_labels))
+    score = clf.score(np.asarray(test_tweets), np.asarray(test_labels))
+    predictions = clf.predict(np.asarray(test_tweets))
     print(name)
     print("<><<><><><><><><><")
+    print("f-measure")
+    print("-------------")
+    current_measure = f_measure(predictions, test_labels)
+    f_measures.append(current_measure[0])
+    precisions.append(current_measure[1])
+    recalls.append(current_measure[2])
+    print(current_measure)
+    print("entropy")
+    print("-------------")
+    print(conditional_entropy(predictions, test_labels))
+    print("accuracy")
+    print("-------------")
     print(score)
+    scores.append(score)
     stop = timeit.default_timer()
+    print("time elapsed")
+    print("-------------")
     print(stop - start)
     print("<><<><><><><><><><")
 print("DONE")
-print(failed)
+draw_accuracy()
+draw_f_measure()
+draw_precision()
+draw_recall()
+
